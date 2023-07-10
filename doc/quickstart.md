@@ -18,9 +18,11 @@ See quick [walkthrough demo video](https://www.youtube.com/watch?v=yZo6k48L0VY).
 
     ```
     info: syncing channel updates for 'nightly'
-    info: latest update on nightly, lean version nightly-2021-12-05
+    info: latest update on nightly, lean version nightly-2023-06-27
     info: downloading component 'lean'
     ```
+    If there is no popup, you probably have Elan installed already.
+    You may want to make sure that your default toolchain is Lean 4 in this case by running `elan default leanprover/lean4:nightly` and reopen the file, as the next step will fail otherwise.
 
 1. While it is installing, you can paste the following Lean program into the new file:
 
@@ -36,6 +38,8 @@ See quick [walkthrough demo video](https://www.youtube.com/watch?v=yZo6k48L0VY).
 You are set up!
 
 ## Create a Lean Project
+
+*If your goal is to contribute to [mathlib4](https://github.com/leanprover-community/mathlib4) or use it as a depdency, please see its readme for specific instructions on how to do that.*
 
 You can now create a Lean project in a new folder. Run `lake init foo` from "View > Terminal" to create a package, followed by `lake build` to get an executable version of your Lean program.
 On Linux/macOS, you first have to follow the instructions printed by the Lean installation or log out and in again for the Lean executables to be available in you terminal.
