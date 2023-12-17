@@ -472,6 +472,7 @@ def quoteString (s : String) : String :=
       else if c == '\t' then "\\t"
       else if c == '\\' then "\\\\"
       else if c == '\"' then "\\\""
+      else if c == '?' then "\\?" -- avoid trigraphs
       else if c.toNat <= 31 then
         "\\x" ++ toHexDigit (c.toNat / 16) ++ toHexDigit (c.toNat % 16)
       -- TODO(Leo): we should use `\unnnn` for escaping unicode characters.
@@ -687,9 +688,13 @@ def emitDeclInit (d : Decl) : M Unit := do
   let env ← getEnv
   let n := d.name
   if isIOUnitInitFn env n then
+    if isIOUnitBuiltinInitFn env n then
+      emit "if (builtin) {"
     emit "res = "; emitCName n; emitLn "(lean_io_mk_world());"
     emitLn "if (lean_io_result_is_error(res)) return res;"
     emitLn "lean_dec_ref(res);"
+    if isIOUnitBuiltinInitFn env n then
+      emit "}"
   else if d.params.size == 0 then
     match getInitFnNameFor? env d.name with
     | some initFn =>

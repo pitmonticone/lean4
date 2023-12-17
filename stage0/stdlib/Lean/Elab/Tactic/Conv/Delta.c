@@ -28,7 +28,6 @@ static lean_object* l___regBuiltin_Lean_Elab_Tactic_Conv_evalDelta___closed__4;
 static lean_object* l___regBuiltin_Lean_Elab_Tactic_Conv_evalDelta___closed__8;
 size_t lean_usize_of_nat(lean_object*);
 static lean_object* l___regBuiltin_Lean_Elab_Tactic_Conv_evalDelta___closed__2;
-lean_object* l_Array_contains___at_Lean_findField_x3f___spec__1___boxed(lean_object*, lean_object*);
 static lean_object* l___regBuiltin_Lean_Elab_Tactic_Conv_evalDelta___closed__11;
 lean_object* l_Lean_Elab_Tactic_Conv_changeLhs(lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*);
 lean_object* l_Lean_Elab_Tactic_Conv_getLhs(lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*);
@@ -48,6 +47,7 @@ LEAN_EXPORT lean_object* l_Lean_Elab_Tactic_Conv_evalDelta(lean_object*, lean_ob
 static lean_object* l___regBuiltin_Lean_Elab_Tactic_Conv_evalDelta_declRange___closed__2;
 lean_object* l_Array_mapMUnsafe_map___at_Lean_Elab_Tactic_evalDelta___spec__17(size_t, size_t, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*);
 static lean_object* l___regBuiltin_Lean_Elab_Tactic_Conv_evalDelta_declRange___closed__5;
+lean_object* l_Array_contains___at___private_Lean_Meta_Match_Value_0__Lean_Meta_isUIntTypeName___spec__1___boxed(lean_object*, lean_object*);
 static lean_object* l___regBuiltin_Lean_Elab_Tactic_Conv_evalDelta_declRange___closed__3;
 lean_object* lean_array_get_size(lean_object*);
 LEAN_EXPORT lean_object* l_Lean_Elab_Tactic_Conv_evalDelta___lambda__1(size_t, size_t, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*);
@@ -97,7 +97,7 @@ lean_inc(x_20);
 x_21 = lean_ctor_get(x_19, 1);
 lean_inc(x_21);
 lean_dec(x_19);
-x_22 = lean_alloc_closure((void*)(l_Array_contains___at_Lean_findField_x3f___spec__1___boxed), 2, 1);
+x_22 = lean_alloc_closure((void*)(l_Array_contains___at___private_Lean_Meta_Match_Value_0__Lean_Meta_isUIntTypeName___spec__1___boxed), 2, 1);
 lean_closure_set(x_22, 0, x_14);
 lean_inc(x_11);
 lean_inc(x_10);
@@ -512,10 +512,10 @@ l___regBuiltin_Lean_Elab_Tactic_Conv_evalDelta___closed__10 = _init_l___regBuilt
 lean_mark_persistent(l___regBuiltin_Lean_Elab_Tactic_Conv_evalDelta___closed__10);
 l___regBuiltin_Lean_Elab_Tactic_Conv_evalDelta___closed__11 = _init_l___regBuiltin_Lean_Elab_Tactic_Conv_evalDelta___closed__11();
 lean_mark_persistent(l___regBuiltin_Lean_Elab_Tactic_Conv_evalDelta___closed__11);
-res = l___regBuiltin_Lean_Elab_Tactic_Conv_evalDelta(lean_io_mk_world());
+if (builtin) {res = l___regBuiltin_Lean_Elab_Tactic_Conv_evalDelta(lean_io_mk_world());
 if (lean_io_result_is_error(res)) return res;
 lean_dec_ref(res);
-l___regBuiltin_Lean_Elab_Tactic_Conv_evalDelta_declRange___closed__1 = _init_l___regBuiltin_Lean_Elab_Tactic_Conv_evalDelta_declRange___closed__1();
+}l___regBuiltin_Lean_Elab_Tactic_Conv_evalDelta_declRange___closed__1 = _init_l___regBuiltin_Lean_Elab_Tactic_Conv_evalDelta_declRange___closed__1();
 lean_mark_persistent(l___regBuiltin_Lean_Elab_Tactic_Conv_evalDelta_declRange___closed__1);
 l___regBuiltin_Lean_Elab_Tactic_Conv_evalDelta_declRange___closed__2 = _init_l___regBuiltin_Lean_Elab_Tactic_Conv_evalDelta_declRange___closed__2();
 lean_mark_persistent(l___regBuiltin_Lean_Elab_Tactic_Conv_evalDelta_declRange___closed__2);
@@ -529,10 +529,10 @@ l___regBuiltin_Lean_Elab_Tactic_Conv_evalDelta_declRange___closed__6 = _init_l__
 lean_mark_persistent(l___regBuiltin_Lean_Elab_Tactic_Conv_evalDelta_declRange___closed__6);
 l___regBuiltin_Lean_Elab_Tactic_Conv_evalDelta_declRange___closed__7 = _init_l___regBuiltin_Lean_Elab_Tactic_Conv_evalDelta_declRange___closed__7();
 lean_mark_persistent(l___regBuiltin_Lean_Elab_Tactic_Conv_evalDelta_declRange___closed__7);
-res = l___regBuiltin_Lean_Elab_Tactic_Conv_evalDelta_declRange(lean_io_mk_world());
+if (builtin) {res = l___regBuiltin_Lean_Elab_Tactic_Conv_evalDelta_declRange(lean_io_mk_world());
 if (lean_io_result_is_error(res)) return res;
 lean_dec_ref(res);
-return lean_io_result_mk_ok(lean_box(0));
+}return lean_io_result_mk_ok(lean_box(0));
 }
 #ifdef __cplusplus
 }

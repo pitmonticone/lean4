@@ -32,13 +32,6 @@ add_custom_target(lean ALL
   COMMAND $(MAKE) -f ${CMAKE_BINARY_DIR}/stdlib.make lean LEAN_SHELL="$<TARGET_OBJECTS:shell>"
   COMMAND_EXPAND_LISTS)
 
-# if we have LLVM enabled, then build `libruntime.bc` which has the LLVM bitcode
-# of Lean runtime to be built.
-if (LLVM)
-   add_dependencies(lean runtime_bc)
-endif()
-
-
 # use executable of current stage for tests
 string(REGEX REPLACE "^([a-zA-Z]):" "/\\1" LEAN_BIN "${CMAKE_BINARY_DIR}/bin")
 
@@ -53,8 +46,12 @@ add_test(lean_ghash2   "${CMAKE_BINARY_DIR}/bin/lean" --githash)
 add_test(lean_unknown_option bash "${LEAN_SOURCE_DIR}/cmake/check_failure.sh" "${CMAKE_BINARY_DIR}/bin/lean" "-z")
 add_test(lean_unknown_file1 bash "${LEAN_SOURCE_DIR}/cmake/check_failure.sh" "${CMAKE_BINARY_DIR}/bin/lean" "boofoo.lean")
 
-# LEANC_OPTS is necessary for macOS c++ to find its headers
-set(TEST_VARS "PATH=${LEAN_BIN}:$PATH ${LEAN_TEST_VARS} CXX='${CMAKE_CXX_COMPILER} ${LEANC_OPTS}'")
+if(${EMSCRIPTEN})
+  configure_file("${LEAN_SOURCE_DIR}/bin/lean.in" "${CMAKE_BINARY_DIR}/bin/lean")
+endif()
+
+# LEANC_OPTS in CXX is necessary for macOS c++ to find its headers
+set(TEST_VARS "PATH=${LEAN_BIN}:$PATH ${LEAN_TEST_VARS} CXX='${CMAKE_CXX_COMPILER} ${LEANC_OPTS}' LEANC_OPTS='${LEANC_OPTS}'")
 
 # LEAN TESTS
 file(GLOB LEANTESTS "${LEAN_SOURCE_DIR}/../tests/lean/*.lean")
@@ -177,11 +174,15 @@ FOREACH(T ${LEANTESTS})
   endif()
 ENDFOREACH(T)
 
-# Create a lake test for each subdirectory of `lake/examples` which contains a `test.sh` file.
-file(GLOB_RECURSE LEANLAKETESTS "${LEAN_SOURCE_DIR}/lake/examples/test.sh")
+# Create a lake test for each test and examples subdirectory of `lake`
+# which contains a `test.sh` file, excluding the following test(s):
+# bootstrap: too slow
+# toolchain: requires elan to download toolchain
+file(GLOB_RECURSE LEANLAKETESTS
+  "${LEAN_SOURCE_DIR}/lake/tests/test.sh"
+  "${LEAN_SOURCE_DIR}/lake/examples/test.sh")
 FOREACH(T ${LEANLAKETESTS})
-  if(NOT T MATCHES ".*lake-packages.*")
-  if(NOT T MATCHES ".*bootstrap.*")
+  if(NOT T MATCHES ".*(lake-packages|bootstrap|toolchain).*")
     GET_FILENAME_COMPONENT(T_DIR ${T} DIRECTORY)
     GET_FILENAME_COMPONENT(DIR_NAME ${T_DIR} NAME)
     add_test(NAME "leanlaketest_${DIR_NAME}"
@@ -190,6 +191,5 @@ FOREACH(T ${LEANLAKETESTS})
                set -eu
                export ${TEST_VARS}
                LAKE=lake ./test.sh")
-  endif()
   endif()
 ENDFOREACH(T)

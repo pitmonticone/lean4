@@ -714,8 +714,12 @@ class task_manager {
             resolve_core(t, v);
         } else {
             // `bind` task has not finished yet, re-add as dependency of nested task
+            // NOTE: closure MUST be extracted before unlocking the mutex as otherwise
+            // another thread could deactivate the task and empty `m_clousure` in
+            // between.
+            object * c = t->m_imp->m_closure;
             lock.unlock();
-            add_dep(lean_to_task(closure_arg_cptr(t->m_imp->m_closure)[0]), t);
+            add_dep(lean_to_task(closure_arg_cptr(c)[0]), t);
             lock.lock();
         }
     }
@@ -725,7 +729,7 @@ class task_manager {
         mark_mt(v);
         t->m_value = v;
         /* After the task has been finished and we propagated
-           dependecies, we can release `m_imp` and keep just the value */
+           dependencies, we can release `m_imp` and keep just the value */
         free_task_imp(t->m_imp);
         t->m_imp   = nullptr;
         m_task_finished_cv.notify_all();
@@ -1614,7 +1618,7 @@ extern "C" LEAN_EXPORT object * lean_string_append(object * s1, object * s2) {
     size_t len1     = lean_string_len(s1);
     size_t len2     = lean_string_len(s2);
     size_t new_len  = len1 + len2;
-    unsigned new_sz = sz1 + sz2 - 1;
+    size_t new_sz   = sz1 + sz2 - 1;
     object * r;
     if (!lean_is_exclusive(s1)) {
         r = lean_alloc_string(new_sz, mk_capacity(new_sz), new_len);

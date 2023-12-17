@@ -5,13 +5,13 @@ Author: Leonardo de Moura
 -/
 prelude
 import Init.SizeOf
+import Init.MetaTypes
 import Init.WF
 
 /-- Unfold definitions commonly used in well founded relation definitions.
 This is primarily intended for internal use in `decreasing_tactic`. -/
 macro "simp_wf" : tactic =>
-  `(tactic| simp [invImage, InvImage, Prod.lex, sizeOfWFRel,
-          measure, Nat.lt_wfRel, WellFoundedRelation.rel])
+  `(tactic| try simp (config := { unfoldPartialApp := true }) [invImage, InvImage, Prod.lex, sizeOfWFRel, measure, Nat.lt_wfRel, WellFoundedRelation.rel])
 
 /-- Extensible helper tactic for `decreasing_tactic`. This handles the "base case"
 reasoning after applying lexicographic order lemmas.
@@ -22,7 +22,7 @@ macro_rules | `(tactic| decreasing_trivial) => `(tactic| linarith)
 -/
 syntax "decreasing_trivial" : tactic
 
-macro_rules | `(tactic| decreasing_trivial) => `(tactic| simp (config := { arith := true }); done)
+macro_rules | `(tactic| decreasing_trivial) => `(tactic| (simp (config := { arith := true, failIfUnchanged := false })); done)
 macro_rules | `(tactic| decreasing_trivial) => `(tactic| assumption)
 macro_rules | `(tactic| decreasing_trivial) => `(tactic| apply Nat.sub_succ_lt_self; assumption) -- a - (i+1) < a - i if i < a
 macro_rules | `(tactic| decreasing_trivial) => `(tactic| apply Nat.pred_lt'; assumption) -- i-1 < i if j < i

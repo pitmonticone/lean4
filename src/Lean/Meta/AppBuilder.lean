@@ -337,7 +337,7 @@ def mkAppOptM (constName : Name) (xs : Array (Option Expr)) : MetaM Expr := do
     let (f, fType) ← mkFun constName
     mkAppOptMAux f xs 0 #[] 0 #[] fType
 
-/-- Similar to `mkAppOptM`, but takes an `Expr` instead of a constant name -/
+/-- Similar to `mkAppOptM`, but takes an `Expr` instead of a constant name. -/
 def mkAppOptM' (f : Expr) (xs : Array (Option Expr)) : MetaM Expr := do
   let fType ← inferType f
   withAppBuilderTrace f xs do withNewMCtxDepth do
@@ -396,7 +396,7 @@ def mkPure (monad : Expr) (e : Expr) : MetaM Expr :=
   mkAppOptM ``Pure.pure #[monad, none, none, e]
 
 /--
-  `mkProjection s fieldName` return an expression for accessing field `fieldName` of the structure `s`.
+  `mkProjection s fieldName` returns an expression for accessing field `fieldName` of the structure `s`.
   Remark: `fieldName` may be a subfield of `s`. -/
 partial def mkProjection (s : Expr) (fieldName : Name) : MetaM Expr := do
   let type ← inferType s
@@ -553,7 +553,7 @@ def mkNumeral (type : Expr) (n : Nat) : MetaM Expr := do
 /--
   Return `a op b`, where `op` has name `opName` and is implemented using the typeclass `className`.
   This method assumes `a` and `b` have the same type, and typeclass `className` is heterogeneous.
-  Examples of supported clases: `HAdd`, `HSub`, `HMul`.
+  Examples of supported classes: `HAdd`, `HSub`, `HMul`.
   We use heterogeneous operators to ensure we have a uniform representation.
   -/
 private def mkBinaryOp (className : Name) (opName : Name) (a b : Expr) : MetaM Expr := do
@@ -574,7 +574,7 @@ def mkMul (a b : Expr) : MetaM Expr := mkBinaryOp ``HMul ``HMul.hMul a b
 /--
   Return `a r b`, where `r` has name `rName` and is implemented using the typeclass `className`.
   This method assumes `a` and `b` have the same type.
-  Examples of supported clases: `LE` and `LT`.
+  Examples of supported classes: `LE` and `LT`.
   We use heterogeneous operators to ensure we have a uniform representation.
   -/
 private def mkBinaryRel (className : Name) (rName : Name) (a b : Expr) : MetaM Expr := do

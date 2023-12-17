@@ -17,6 +17,8 @@ Remark: it is not safe to run `initialize` code when using multiple threads.
 Remark: Any loaded native Lean code must match its imported version. In particular,
   no two versions of the same module may be loaded when this flag is set.
   No native code may be loaded after its module has been imported.
+Remark: Compacted module regions must not be freed when using this flag as the
+  cached initializer results may reference objects in them.
 Remark: The Lean frontend executes this method at startup time.
 -/
 @[export lean_enable_initializer_execution]
@@ -40,7 +42,7 @@ the `initialize` command to update global references.
 IMPORTANT: There is no semaphore controlling the access to these global references.
 We assume these global references are updated by a single execution thread.
 This is true in the Lean frontend where we process the `import` commands at the beginning
-of the execution only. Users must make sure that `importModules` is used, there is only
+of the execution only. Users must make sure that when `importModules` is used, there is only
 one execution thread accessing the global references.
 -/
 def withImporting (x : IO α) : IO α :=

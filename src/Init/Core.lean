@@ -464,13 +464,13 @@ theorem optParam_eq (α : Sort u) (default : α) : optParam α default = α := r
 `strictOr` is the same as `or`, but it does not use short-circuit evaluation semantics:
 both sides are evaluated, even if the first value is `true`.
 -/
-@[extern c inline "#1 || #2"] def strictOr  (b₁ b₂ : Bool) := b₁ || b₂
+@[extern "lean_strict_or"] def strictOr  (b₁ b₂ : Bool) := b₁ || b₂
 
 /--
 `strictAnd` is the same as `and`, but it does not use short-circuit evaluation semantics:
 both sides are evaluated, even if the first value is `false`.
 -/
-@[extern c inline "#1 && #2"] def strictAnd (b₁ b₂ : Bool) := b₁ && b₂
+@[extern "lean_strict_and"] def strictAnd (b₁ b₂ : Bool) := b₁ && b₂
 
 /--
 `x != y` is boolean not-equal. It is the negation of `x == y` which is supplied by
@@ -1480,7 +1480,7 @@ end
 
 section Exact
 
-variable   {α : Sort u}
+variable {α : Sort u}
 
 private def rel {s : Setoid α} (q₁ q₂ : Quotient s) : Prop :=
   Quotient.liftOn₂ q₁ q₂
@@ -1613,6 +1613,11 @@ namespace Lean
 /-! # Kernel reduction hints -/
 
 /--
+Depends on the correctness of the Lean compiler, interpreter, and all `[implemented_by ...]` and `[extern ...]` annotations.
+-/
+axiom trustCompiler : True
+
+/--
 When the kernel tries to reduce a term `Lean.reduceBool c`, it will invoke the Lean interpreter to evaluate `c`.
 The kernel will not use the interpreter if `c` is not a constant.
 This feature is useful for performing proofs by reflection.
@@ -1631,7 +1636,10 @@ Recall that the compiler trusts the correctness of all `[implemented_by ...]` an
 If an extern function is executed, then the trusted code base will also include the implementation of the associated
 foreign function.
 -/
-opaque reduceBool (b : Bool) : Bool := b
+opaque reduceBool (b : Bool) : Bool :=
+  -- This ensures that `#print axioms` will track use of `reduceBool`.
+  have := trustCompiler
+  b
 
 /--
 Similar to `Lean.reduceBool` for closed `Nat` terms.
@@ -1640,7 +1648,11 @@ Remark: we do not have plans for supporting a generic `reduceValue {α} (a : α)
 The main issue is that it is non-trivial to convert an arbitrary runtime object back into a Lean expression.
 We believe `Lean.reduceBool` enables most interesting applications (e.g., proof by reflection).
 -/
-opaque reduceNat (n : Nat) : Nat := n
+opaque reduceNat (n : Nat) : Nat :=
+  -- This ensures that `#print axioms` will track use of `reduceNat`.
+  have := trustCompiler
+  n
+
 
 /--
 The axiom `ofReduceBool` is used to perform proofs by reflection. See `reduceBool`.

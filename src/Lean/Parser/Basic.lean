@@ -23,7 +23,7 @@ The Lean parser was developed with the following primary goals in mind:
 Given these constraints, we decided to implement a combinatoric, non-monadic, lexer-less, memoizing recursive-descent
 parser. Using combinators instead of some more formal and introspectible grammar representation ensures ultimate
 flexibility as well as efficient extensibility: there is (almost) no pre-processing necessary when extending the grammar
-with a new parser. However, because the all results the combinators produce are of the homogeneous `Syntax` type, the
+with a new parser. However, because all the results the combinators produce are of the homogeneous `Syntax` type, the
 basic parser type is not actually a monad but a monomorphic linear function `ParserState → ParserState`, avoiding
 constructing and deconstructing countless monadic return values. Instead of explicitly returning syntax objects, parsers
 push (zero or more of) them onto a syntax stack inside the linear state. Chaining parsers via `>>` accumulates their
@@ -92,10 +92,15 @@ def andthenFn (p q : ParserFn) : ParserFn := fun c s =>
   firstTokens   := p.firstTokens.seq q.firstTokens
 }
 
-def andthen (p q : Parser) : Parser := {
-  info := andthenInfo p.info q.info,
+/-- The `andthen(p, q)` combinator, usually written as adjacency in syntax declarations (`p q`),
+parses `p` followed by `q`.
+
+The arity of this parser is the sum of the arities of `p` and `q`:
+that is, it accumulates all the nodes produced by `p` followed by the nodes from `q` into the list
+of arguments to the surrounding parse node. -/
+def andthen (p q : Parser) : Parser where
+  info := andthenInfo p.info q.info
   fn   := andthenFn p.fn q.fn
-}
 
 instance : AndThen Parser where
   andThen a b := andthen a (b ())
@@ -134,8 +139,7 @@ def errorAtSavedPosFn (msg : String) (delta : Bool) : ParserFn := fun c s =>
   | none     => s
   | some pos =>
     let pos := if delta then c.input.next pos else pos
-    match s with
-    | ⟨stack, lhsPrec, _, cache, _⟩ => ⟨stack.push Syntax.missing, lhsPrec, pos, cache, some { unexpected := msg }⟩
+    s.mkUnexpectedErrorAt msg pos
 
 /-- Generate an error at the position saved with the `withPosition` combinator.
    If `delta == true`, then it reports at saved position+1.
@@ -211,7 +215,6 @@ inductive OrElseOnAntiquotBehavior where
   deriving BEq
 
 def orelseFnCore (p q : ParserFn) (antiquotBehavior := OrElseOnAntiquotBehavior.merge) : ParserFn := fun c s => Id.run do
-  let s0     := s
   let iniSz  := s.stackSize
   let iniPos := s.pos
   let mut s  := p c s
@@ -222,22 +225,34 @@ def orelseFnCore (p q : ParserFn) (antiquotBehavior := OrElseOnAntiquotBehavior.
     else
       s
   | none =>
-    let back := s.stxStack.back
-    if antiquotBehavior != .acceptLhs && s.stackSize == iniSz + 1 && back.isAntiquots then
-      let s' := q c s0
-      if !s'.hasError then
-        -- If `q` made more progress than `p`, we prefer its result.
-        -- Thus `(structInstField| $id := $val) is interpreted as
-        -- `(structInstField| $id:ident := $val:term), not
-        -- `(structInstField| $id:structInstField <ERROR: expected ')'>.
-        if s'.pos > s.pos then
-          return s'
-        else if antiquotBehavior == .merge && s'.stackSize == iniSz + 1 && s'.stxStack.back.isAntiquot then
-          if back.isOfKind choiceKind then
-            s := { s with stxStack := s.stxStack.pop ++ back.getArgs }
-          s := s.pushSyntax s'.stxStack.back
-          s := s.mkNode choiceKind iniSz
-    s
+    let pBack := s.stxStack.back
+    if antiquotBehavior == .acceptLhs || s.stackSize != iniSz + 1 || !pBack.isAntiquots then
+      return s
+    let pPos := s.pos
+    s := s.restore iniSz iniPos
+    s := q c s
+    if s.hasError then
+      return s.restore iniSz pPos |>.pushSyntax pBack
+    -- If `q` made more progress than `p`, we prefer its result.
+    -- Thus `(structInstField| $id := $val) is interpreted as
+    -- `(structInstField| $id:ident := $val:term), not
+    -- `(structInstField| $id:structInstField <ERROR: expected ')'>.
+    if s.pos > pPos then
+      return s
+    if s.pos < pPos || antiquotBehavior != .merge || s.stackSize != iniSz + 1 || !s.stxStack.back.isAntiquots then
+      return s.restore iniSz pPos |>.pushSyntax pBack
+    -- Pop off result of `q`, push result(s) of `p` and `q` in that order, turn them into a choice node
+    let qBack := s.stxStack.back
+    s := s.popSyntax
+    let pushAntiquots stx s :=
+      if stx.isOfKind choiceKind then
+        -- Flatten existing choice node
+        { s with stxStack := s.stxStack ++ stx.getArgs }
+      else
+        s.pushSyntax stx
+    s := pushAntiquots pBack s
+    s := pushAntiquots qBack s
+    s.mkNode choiceKind iniSz
 
 def orelseFn (p q : ParserFn) : ParserFn :=
   orelseFnCore p q
@@ -254,10 +269,9 @@ def orelseFn (p q : ParserFn) : ParserFn :=
   NOTE: In order for the pretty printer to retrace an `orelse`, `p` must be a call to `node` or some other parser
   producing a single node kind. Nested `orelse` calls are flattened for this, i.e. `(node k1 p1 <|> node k2 p2) <|> ...`
   is fine as well. -/
-def orelse (p q : Parser) : Parser := {
+def orelse (p q : Parser) : Parser where
   info := orelseInfo p.info q.info
   fn   := orelseFn p.fn q.fn
-}
 
 instance : OrElse Parser where
   orElse a b := orelse a (b ())
@@ -273,6 +287,12 @@ def atomicFn (p : ParserFn) : ParserFn := fun c s =>
   | ⟨stack, lhsPrec, _, cache, some msg⟩ => ⟨stack, lhsPrec, iniPos, cache, some msg⟩
   | other                       => other
 
+/-- The `atomic(p)` parser parses `p`, returns the same result as `p` and fails iff `p` fails,
+but if `p` fails after consuming some tokens `atomic(p)` will fail without consuming tokens.
+This is important for the `p <|> q` combinator, because it is not backtracking, and will fail if
+`p` fails after consuming some tokens. To get backtracking behavior, use `atomic(p) <|> q` instead.
+
+This parser has the same arity as `p` - it produces the same result as `p`. -/
 def atomic : Parser → Parser := withFn atomicFn
 
 def optionalFn (p : ParserFn) : ParserFn := fun c s =>
@@ -299,6 +319,11 @@ def lookaheadFn (p : ParserFn) : ParserFn := fun c s =>
   let s      := p c s
   if s.hasError then s else s.restore iniSz iniPos
 
+/-- `lookahead(p)` runs `p` and fails if `p` does, but it produces no parse nodes and rewinds the
+position to the original state on success. So for example `lookahead("=>")` will ensure that the
+next token is `"=>"`, without actually consuming this token.
+
+This parser has arity 0 - it does not capture anything. -/
 def lookahead : Parser → Parser := withFn lookaheadFn
 
 def notFollowedByFn (p : ParserFn) (msg : String) : ParserFn := fun c s =>
@@ -311,9 +336,12 @@ def notFollowedByFn (p : ParserFn) (msg : String) : ParserFn := fun c s =>
     let s := s.restore iniSz iniPos
     s.mkUnexpectedError s!"unexpected {msg}"
 
-def notFollowedBy (p : Parser) (msg : String) : Parser := {
+/-- `notFollowedBy(p, "foo")` succeeds iff `p` fails;
+if `p` succeeds then it fails with the message `"unexpected foo"`.
+
+This parser has arity 0 - it does not capture anything. -/
+def notFollowedBy (p : Parser) (msg : String) : Parser where
   fn := notFollowedByFn p.fn msg
-}
 
 partial def manyAux (p : ParserFn) : ParserFn := fun c s => Id.run do
   let iniSz  := s.stackSize
@@ -536,7 +564,40 @@ def hexDigitFn : ParserFn := fun c s =>
     if curr.isDigit || ('a' <= curr && curr <= 'f') || ('A' <= curr && curr <= 'F') then s.setPos i
     else s.mkUnexpectedError "invalid hexadecimal numeral"
 
-def quotedCharCoreFn (isQuotable : Char → Bool) : ParserFn := fun c s =>
+/--
+Parses the whitespace after the `\` when there is a string gap.
+Raises an error if the whitespace does not contain exactly one newline character.
+Processes `\r\n` as a newline.
+-/
+partial def stringGapFn (seenNewline afterCR : Bool) : ParserFn := fun c s =>
+  let i := s.pos
+  if h : c.input.atEnd i then s -- let strLitFnAux handle the EOI error if !seenNewline
+  else
+    let curr := c.input.get' i h
+    if curr == '\n' then
+      if seenNewline then
+        -- Having more than one newline in a string gap is visually confusing
+        s.mkUnexpectedError "unexpected additional newline in string gap"
+      else
+        stringGapFn true false c (s.next' c.input i h)
+    else if curr == '\r' then
+      stringGapFn seenNewline true c (s.next' c.input i h)
+    else if afterCR then
+      s.mkUnexpectedError "expecting newline after carriage return"
+    else if curr.isWhitespace then
+      stringGapFn seenNewline false c (s.next' c.input i h)
+    else if seenNewline then
+      s
+    else
+      s.mkUnexpectedError "expecting newline in string gap"
+
+/--
+Parses a string quotation after a `\`.
+- `isQuotable` determines which characters are valid escapes
+- `inString` enables features that are only valid within strings,
+  in particular `"\" newline whitespace*` gaps.
+-/
+def quotedCharCoreFn (isQuotable : Char → Bool) (inString : Bool) : ParserFn := fun c s =>
   let input := c.input
   let i     := s.pos
   if h : input.atEnd i then s.mkEOIError
@@ -548,6 +609,8 @@ def quotedCharCoreFn (isQuotable : Char → Bool) : ParserFn := fun c s =>
       andthenFn hexDigitFn hexDigitFn c (s.next' input i h)
     else if curr == 'u' then
       andthenFn hexDigitFn (andthenFn hexDigitFn (andthenFn hexDigitFn hexDigitFn)) c (s.next' input i h)
+    else if inString && (curr == '\n' || curr == '\r') then
+      stringGapFn false false c s
     else
       s.mkUnexpectedError "invalid escape sequence"
 
@@ -555,7 +618,14 @@ def isQuotableCharDefault (c : Char) : Bool :=
   c == '\\' || c == '\"' || c == '\'' || c == 'r' || c == 'n' || c == 't'
 
 def quotedCharFn : ParserFn :=
-  quotedCharCoreFn isQuotableCharDefault
+  quotedCharCoreFn isQuotableCharDefault false
+
+/--
+Like `quotedCharFn` but enables escapes that are only valid inside strings.
+In particular, string gaps (`"\" newline whitespace*`).
+-/
+def quotedStringFn : ParserFn :=
+  quotedCharCoreFn isQuotableCharDefault true
 
 /-- Push `(Syntax.node tk <new-atom>)` onto syntax stack if parse was successful. -/
 def mkNodeToken (n : SyntaxNodeKind) (startPos : String.Pos) : ParserFn := fun c s => Id.run do
@@ -596,7 +666,7 @@ partial def strLitFnAux (startPos : String.Pos) : ParserFn := fun c s =>
     let s    := s.setPos (input.next' i h)
     if curr == '\"' then
       mkNodeToken strLitKind startPos c s
-    else if curr == '\\' then andthenFn quotedCharFn (strLitFnAux startPos) c s
+    else if curr == '\\' then andthenFn quotedStringFn (strLitFnAux startPos) c s
     else strLitFnAux startPos c s
 
 def decimalNumberFn (startPos : String.Pos) (c : ParserContext) : ParserState → ParserState := fun s =>
@@ -793,7 +863,7 @@ private def tokenFnAux : ParserFn := fun c s =>
   else if curr == '`' && isIdFirstOrBeginEscape (getNext input i) then
     nameLitAux i c s
   else
-    let (_, tk) := c.tokens.matchPrefix input i
+    let tk := c.tokens.matchPrefix input i
     identFnAux i tk .anonymous c s
 
 private def updateTokenCache (startPos : String.Pos) (s : ParserState) : ParserState :=
@@ -842,16 +912,16 @@ def rawIdentFn : ParserFn := fun c s =>
   if input.atEnd i then s.mkEOIError
   else identFnAux i none .anonymous c s
 
-def satisfySymbolFn (p : String → Bool) (expected : List String) : ParserFn := fun c s =>
-  let initStackSz := s.stackSize
-  let startPos := s.pos
-  let s        := tokenFn expected c s
+def satisfySymbolFn (p : String → Bool) (expected : List String) : ParserFn := fun c s => Id.run do
+  let iniPos := s.pos
+  let s := tokenFn expected c s
   if s.hasError then
-    s
-  else
-    match s.stxStack.back with
-    | .atom _ sym => if p sym then s else s.mkErrorsAt expected startPos initStackSz
-    | _           => s.mkErrorsAt expected startPos initStackSz
+    return s
+  if let .atom _ sym := s.stxStack.back then
+    if p sym then
+      return s
+  -- this is a very hot `mkUnexpectedTokenErrors` call, so explicitly pass `iniPos`
+  s.mkUnexpectedTokenErrors expected iniPos
 
 def symbolFnAux (sym : String) (errorMsg : String) : ParserFn :=
   satisfySymbolFn (fun s => s == sym) [errorMsg]
@@ -881,22 +951,20 @@ def checkTailNoWs (prev : Syntax) : Bool :=
     For example, the universe `max` Function is parsed using this combinator so that
     it can still be used as an identifier outside of universe (but registering it
     as a token in a Term Syntax would not break the universe Parser). -/
-def nonReservedSymbolFnAux (sym : String) (errorMsg : String) : ParserFn := fun c s =>
-  let initStackSz := s.stackSize
-  let startPos := s.pos
+def nonReservedSymbolFnAux (sym : String) (errorMsg : String) : ParserFn := fun c s => Id.run do
   let s := tokenFn [errorMsg] c s
-  if s.hasError then s
-  else
-    match s.stxStack.back with
-    | .atom _ sym' =>
-      if sym == sym' then s else s.mkErrorAt errorMsg startPos initStackSz
-    | .ident info rawVal _ _ =>
-      if sym == rawVal.toString then
-        let s := s.popSyntax
-        s.pushSyntax (Syntax.atom info sym)
-      else
-        s.mkErrorAt errorMsg startPos initStackSz
-    | _ => s.mkErrorAt errorMsg startPos initStackSz
+  if s.hasError then
+    return s
+  match s.stxStack.back with
+  | .atom _ sym' =>
+    if sym == sym' then
+      return s
+  | .ident info rawVal _ _ =>
+    if sym == rawVal.toString then
+      let s := s.popSyntax
+      return s.pushSyntax (Syntax.atom info sym)
+  | _ => ()
+  s.mkUnexpectedTokenError errorMsg
 
 def nonReservedSymbolFn (sym : String) : ParserFn :=
   nonReservedSymbolFnAux sym ("'" ++ sym ++ "'")
@@ -934,10 +1002,13 @@ def checkWsBeforeFn (errorMsg : String) : ParserFn := fun _ s =>
   let prev := s.stxStack.back
   if checkTailWs prev then s else s.mkError errorMsg
 
-def checkWsBefore (errorMsg : String := "space before") : Parser := {
+/-- The `ws` parser requires that there is some whitespace at this location.
+For example, the parser `"foo" ws "+"` parses `foo +` or `foo/- -/+` but not `foo+`.
+
+This parser has arity 0 - it does not capture anything. -/
+def checkWsBefore (errorMsg : String := "space before") : Parser where
   info := epsilonInfo
   fn   := checkWsBeforeFn errorMsg
-}
 
 def checkTailLinebreak (prev : Syntax) : Bool :=
   match prev.getTailInfo with
@@ -948,10 +1019,13 @@ def checkLinebreakBeforeFn (errorMsg : String) : ParserFn := fun _ s =>
   let prev := s.stxStack.back
   if checkTailLinebreak prev then s else s.mkError errorMsg
 
-def checkLinebreakBefore (errorMsg : String := "line break") : Parser := {
+/-- The `linebreak` parser requires that there is at least one line break at this location.
+(The line break may be inside a comment.)
+
+This parser has arity 0 - it does not capture anything. -/
+def checkLinebreakBefore (errorMsg : String := "line break") : Parser where
   info := epsilonInfo
   fn   := checkLinebreakBeforeFn errorMsg
-}
 
 private def pickNonNone (stack : SyntaxStack) : Syntax :=
   match stack.toSubarray.findRev? fun stx => !stx.isNone with
@@ -962,6 +1036,13 @@ def checkNoWsBeforeFn (errorMsg : String) : ParserFn := fun _ s =>
   let prev := pickNonNone s.stxStack
   if checkTailNoWs prev then s else s.mkError errorMsg
 
+/-- The `noWs` parser requires that there is *no* whitespace between the preceding and following
+parsers. For example, the parser `"foo" noWs "+"` parses `foo+` but not `foo +`.
+
+This is almost the same as `"foo+"`, but using this parser will make `foo+` a token, which may cause
+problems for the use of `"foo"` and `"+"` as separate tokens in other parsers.
+
+This parser has arity 0 - it does not capture anything. -/
 def checkNoWsBefore (errorMsg : String := "no space before") : Parser := {
   info := epsilonInfo
   fn   := checkNoWsBeforeFn errorMsg
@@ -987,66 +1068,49 @@ def unicodeSymbolNoAntiquot (sym asciiSym : String) : Parser :=
 def mkAtomicInfo (k : String) : ParserInfo :=
   { firstTokens := FirstTokens.tokens [ k ] }
 
-def numLitFn : ParserFn := fun c s =>
-  let initStackSz := s.stackSize
-  let iniPos := s.pos
-  let s      := tokenFn ["numeral"] c s
-  if !s.hasError && !(s.stxStack.back.isOfKind numLitKind) then s.mkErrorAt "numeral" iniPos initStackSz else s
+/--
+  Parses a token and asserts the result is of the given kind.
+  `desc` is used in error messages as the token kind. -/
+def expectTokenFn (k : SyntaxNodeKind) (desc : String) : ParserFn := fun c s =>
+  let s := tokenFn [desc] c s
+  if !s.hasError && !(s.stxStack.back.isOfKind k) then s.mkUnexpectedTokenError desc else s
+
+def numLitFn : ParserFn := expectTokenFn numLitKind "numeral"
 
 def numLitNoAntiquot : Parser := {
   fn   := numLitFn
   info := mkAtomicInfo "num"
 }
 
-def scientificLitFn : ParserFn := fun c s =>
-  let initStackSz := s.stackSize
-  let iniPos := s.pos
-  let s      := tokenFn ["scientific number"] c s
-  if !s.hasError && !(s.stxStack.back.isOfKind scientificLitKind) then s.mkErrorAt "scientific number" iniPos initStackSz else s
+def scientificLitFn : ParserFn := expectTokenFn scientificLitKind "scientific number"
 
 def scientificLitNoAntiquot : Parser := {
   fn   := scientificLitFn
   info := mkAtomicInfo "scientific"
 }
 
-def strLitFn : ParserFn := fun c s =>
-  let initStackSz := s.stackSize
-  let iniPos := s.pos
-  let s := tokenFn ["string literal"] c s
-  if !s.hasError && !(s.stxStack.back.isOfKind strLitKind) then s.mkErrorAt "string literal" iniPos initStackSz else s
+def strLitFn : ParserFn := expectTokenFn strLitKind "string literal"
 
 def strLitNoAntiquot : Parser := {
   fn   := strLitFn
   info := mkAtomicInfo "str"
 }
 
-def charLitFn : ParserFn := fun c s =>
-  let initStackSz := s.stackSize
-  let iniPos := s.pos
-  let s := tokenFn ["char literal"] c s
-  if !s.hasError && !(s.stxStack.back.isOfKind charLitKind) then s.mkErrorAt "character literal" iniPos initStackSz else s
+def charLitFn : ParserFn := expectTokenFn charLitKind "character literal"
 
 def charLitNoAntiquot : Parser := {
   fn   := charLitFn
   info := mkAtomicInfo "char"
 }
 
-def nameLitFn : ParserFn := fun c s =>
-  let initStackSz := s.stackSize
-  let iniPos := s.pos
-  let s := tokenFn ["Name literal"] c s
-  if !s.hasError && !(s.stxStack.back.isOfKind nameLitKind) then s.mkErrorAt "Name literal" iniPos initStackSz else s
+def nameLitFn : ParserFn := expectTokenFn nameLitKind "Name literal"
 
 def nameLitNoAntiquot : Parser := {
   fn   := nameLitFn
   info := mkAtomicInfo "name"
 }
 
-def identFn : ParserFn := fun c s =>
-  let initStackSz := s.stackSize
-  let iniPos := s.pos
-  let s      := tokenFn ["identifier"] c s
-  if !s.hasError && !(s.stxStack.back.isIdent) then s.mkErrorAt "identifier" iniPos initStackSz else s
+def identFn : ParserFn := expectTokenFn identKind "identifier"
 
 def identNoAntiquot : Parser := {
   fn   := identFn
@@ -1058,14 +1122,12 @@ def rawIdentNoAntiquot : Parser := {
 }
 
 def identEqFn (id : Name) : ParserFn := fun c s =>
-  let initStackSz := s.stackSize
-  let iniPos := s.pos
   let s      := tokenFn ["identifier"] c s
   if s.hasError then
     s
   else match s.stxStack.back with
-    | .ident _ _ val _ => if val != id then s.mkErrorAt ("expected identifier '" ++ toString id ++ "'") iniPos initStackSz else s
-    | _ => s.mkErrorAt "identifier" iniPos initStackSz
+    | .ident _ _ val _ => if val != id then s.mkUnexpectedTokenError s!"identifier '{id}'" else s
+    | _ => s.mkUnexpectedTokenError "identifier"
 
 def identEq (id : Name) : Parser := {
   fn   := identEqFn id
@@ -1163,7 +1225,7 @@ def runLongestMatchParser (left? : Option Syntax) (startLhsPrec : Nat) (p : Pars
     -- error with an unexpected number of nodes.
     s.shrinkStack startSize |>.pushSyntax Syntax.missing
   else
-    -- parser succeded with incorrect number of nodes
+    -- parser succeeded with incorrect number of nodes
     invalidLongestMatchParser s
 
 def longestMatchStep (left? : Option Syntax) (startSize startLhsPrec : Nat) (startPos : String.Pos) (prevPrio : Nat) (prio : Nat) (p : ParserFn)
@@ -1223,8 +1285,13 @@ def checkColEqFn (errorMsg : String) : ParserFn := fun c s =>
     if pos.column = savedPos.column then s
     else s.mkError errorMsg
 
-def checkColEq (errorMsg : String := "checkColEq") : Parser :=
-  { fn := checkColEqFn errorMsg }
+/-- The `colEq` parser ensures that the next token starts at exactly the column of the saved
+position (see `withPosition`). This can be used to do whitespace sensitive syntax like
+a `by` block or `do` block, where all the lines have to line up.
+
+This parser has arity 0 - it does not capture anything. -/
+def checkColEq (errorMsg : String := "checkColEq") : Parser where
+  fn := checkColEqFn errorMsg
 
 def checkColGeFn (errorMsg : String) : ParserFn := fun c s =>
   match c.savedPos? with
@@ -1235,8 +1302,15 @@ def checkColGeFn (errorMsg : String) : ParserFn := fun c s =>
     if pos.column ≥ savedPos.column then s
     else s.mkError errorMsg
 
-def checkColGe (errorMsg : String := "checkColGe") : Parser :=
-  { fn := checkColGeFn errorMsg }
+/-- The `colGe` parser requires that the next token starts from at least the column of the saved
+position (see `withPosition`), but allows it to be more indented.
+This can be used for whitespace sensitive syntax to ensure that a block does not go outside a
+certain indentation scope. For example it is used in the lean grammar for `else if`, to ensure
+that the `else` is not less indented than the `if` it matches with.
+
+This parser has arity 0 - it does not capture anything. -/
+def checkColGe (errorMsg : String := "checkColGe") : Parser where
+  fn := checkColGeFn errorMsg
 
 def checkColGtFn (errorMsg : String) : ParserFn := fun c s =>
   match c.savedPos? with
@@ -1247,8 +1321,20 @@ def checkColGtFn (errorMsg : String) : ParserFn := fun c s =>
     if pos.column > savedPos.column then s
     else s.mkError errorMsg
 
-def checkColGt (errorMsg : String := "checkColGt") : Parser :=
-  { fn := checkColGtFn errorMsg }
+/-- The `colGt` parser requires that the next token starts a strictly greater column than the saved
+position (see `withPosition`). This can be used for whitespace sensitive syntax for the arguments
+to a tactic, to ensure that the following tactic is not interpreted as an argument.
+```
+example (x : False) : False := by
+  revert x
+  exact id
+```
+Here, the `revert` tactic is followed by a list of `colGt ident`, because otherwise it would
+interpret `exact` as an identifier and try to revert a variable named `exact`.
+
+This parser has arity 0 - it does not capture anything. -/
+def checkColGt (errorMsg : String := "checkColGt") : Parser where
+  fn := checkColGtFn errorMsg
 
 def checkLineEqFn (errorMsg : String) : ParserFn := fun c s =>
   match c.savedPos? with
@@ -1259,9 +1345,28 @@ def checkLineEqFn (errorMsg : String) : ParserFn := fun c s =>
     if pos.line == savedPos.line then s
     else s.mkError errorMsg
 
-def checkLineEq (errorMsg : String := "checkLineEq") : Parser :=
-  { fn := checkLineEqFn errorMsg }
+/-- The `lineEq` parser requires that the current token is on the same line as the saved position
+(see `withPosition`). This can be used to ensure that composite tokens are not "broken up" across
+different lines. For example, `else if` is parsed using `lineEq` to ensure that the two tokens
+are on the same line.
 
+This parser has arity 0 - it does not capture anything. -/
+def checkLineEq (errorMsg : String := "checkLineEq") : Parser where
+  fn := checkLineEqFn errorMsg
+
+/-- `withPosition(p)` runs `p` while setting the "saved position" to the current position.
+This has no effect on its own, but various other parsers access this position to achieve some
+composite effect:
+
+* `colGt`, `colGe`, `colEq` compare the column of the saved position to the current position,
+  used to implement Python-style indentation sensitive blocks
+* `lineEq` ensures that the current position is still on the same line as the saved position,
+  used to implement composite tokens
+
+The saved position is only available in the read-only state, which is why this is a scoping parser:
+after the `withPosition(..)` block the saved position will be restored to its original value.
+
+This parser has the same arity as `p` - it just forwards the results of `p`. -/
 def withPosition : Parser → Parser := withFn fun f c s =>
     adaptCacheableContextFn ({ · with savedPos? := s.pos }) f c s
 
@@ -1269,12 +1374,29 @@ def withPositionAfterLinebreak : Parser → Parser := withFn fun f c s =>
   let prev := s.stxStack.back
   adaptCacheableContextFn (fun c => if checkTailLinebreak prev then { c with savedPos? := s.pos } else c) f c s
 
+/-- `withoutPosition(p)` runs `p` without the saved position, meaning that position-checking
+parsers like `colGt` will have no effect. This is usually used by bracketing constructs like
+`(...)` so that the user can locally override whitespace sensitivity.
+
+This parser has the same arity as `p` - it just forwards the results of `p`. -/
 def withoutPosition (p : Parser) : Parser :=
   adaptCacheableContext ({ · with savedPos? := none }) p
 
+/-- `withForbidden tk p` runs `p` with `tk` as a "forbidden token". This means that if the token
+appears anywhere in `p` (unless it is nested in `withoutForbidden`), parsing will immediately
+stop there, making `tk` effectively a lowest-precedence operator. This is used for parsers like
+`for x in arr do ...`: `arr` is parsed as `withForbidden "do" term` because otherwise `arr do ...`
+would be treated as an application.
+
+This parser has the same arity as `p` - it just forwards the results of `p`. -/
 def withForbidden (tk : Token) (p : Parser) : Parser :=
   adaptCacheableContext ({ · with forbiddenTk? := tk }) p
 
+/-- `withoutForbidden(p)` runs `p` disabling the "forbidden token" (see `withForbidden`), if any.
+This is usually used by bracketing constructs like `(...)` because there is no parsing ambiguity
+inside these nested constructs.
+
+This parser has the same arity as `p` - it just forwards the results of `p`. -/
 def withoutForbidden (p : Parser) : Parser :=
   adaptCacheableContext ({ · with forbiddenTk? := none }) p
 
@@ -1335,7 +1457,7 @@ inductive LeadingIdentBehavior where
   | default
   /-- `LeadingIdentBehavior.symbol`: if the leading token is
   an identifier `<foo>`, and there are parsers `P` associated with
-  the toek `<foo>`, then it executes `P`. Otherwise, it executes
+  the token `<foo>`, then it executes `P`. Otherwise, it executes
   only the parsers associated with the auxiliary token "ident". -/
   | symbol
   /-- `LeadingIdentBehavior.both`: if the leading token
@@ -1587,7 +1709,11 @@ def leadingParserAux (kind : Name) (tables : PrattParsingTables) (behavior : Lea
     return s
   let ps      := tables.leadingParsers ++ ps
   if ps.isEmpty then
-    return s.mkError (toString kind)
+    -- if there are no applicable parsers, consume the leading token and flag it as unexpected at this position
+    let s := tokenFn [toString kind] c s
+    if s.hasError then
+      return s
+    return s.mkUnexpectedTokenError (toString kind)
   let s := longestMatchFn none ps c s
   mkResult s iniSz
 
@@ -1631,8 +1757,8 @@ partial def trailingLoop (tables : PrattParsingTables) (c : ParserContext) (s : 
   After processing the leading parser, we chain with parsers from `trailingTable`/`trailingParsers` that have precedence
   at least `c.prec` where `c` is the `ParsingContext`. Recall that `c.prec` is set by `categoryParser`.
 
-  Note that in the original Pratt's algorith, precedences are only checked before calling trailing parsers. In our
-  implementation, leading *and* trailing parsers check the precendece. We claim our algorithm is more flexible,
+  Note that in the original Pratt's algorithm, precedences are only checked before calling trailing parsers. In our
+  implementation, leading *and* trailing parsers check the precedence. We claim our algorithm is more flexible,
   modular and easier to understand.
 
   `antiquotParser` should be a `mkAntiquot` parser (or always fail) and is tried before all other parsers.

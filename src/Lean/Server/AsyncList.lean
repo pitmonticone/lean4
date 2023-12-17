@@ -65,20 +65,25 @@ partial def getAll : AsyncList ε α → List α × Option ε
     | Except.ok tl => tl.getAll
     | Except.error e => ⟨[], some e⟩
 
-/-- Spawns a `Task` waiting on the prefix of elements for which `p` is true. -/
-partial def waitAll (p : α → Bool := fun _ => true) : AsyncList ε α → Task (List α × Option ε)
+/-- Spawns a `Task` returning the prefix of elements up to (including) the first element for which `p` is true.
+When `p` is not true of any element, it returns the entire list. -/
+partial def waitUntil (p : α → Bool) : AsyncList ε α → Task (List α × Option ε)
   | cons hd tl =>
-    if p hd then
-      (tl.waitAll p).map fun ⟨l, e?⟩ => ⟨hd :: l, e?⟩
+    if !p hd then
+      (tl.waitUntil p).map fun ⟨l, e?⟩ => ⟨hd :: l, e?⟩
     else
       .pure ⟨[hd], none⟩
   | nil => .pure ⟨[], none⟩
   | delayed tl =>
     tl.bind fun
-      | .ok tl   => tl.waitAll p
+      | .ok tl   => tl.waitUntil p
       | .error e => .pure ⟨[], some e⟩
 
-/-- Spawns a `Task` acting like `List.find?` but which will wait for tail evalution
+/-- Spawns a `Task` waiting on all elements. -/
+def waitAll : AsyncList ε α → Task (List α × Option ε) :=
+  waitUntil (fun _ => false)
+
+/-- Spawns a `Task` acting like `List.find?` but which will wait for tail evaluation
 when necessary to traverse the list. If the tail terminates before a matching element
 is found, the task throws the terminating value. -/
 partial def waitFind? (p : α → Bool) : AsyncList ε α → Task (Except ε (Option α))
@@ -106,6 +111,20 @@ partial def getFinishedPrefix : AsyncList ε α → BaseIO (List α × Option ε
 
 def waitHead? (as : AsyncList ε α) : Task (Except ε (Option α)) :=
   as.waitFind? fun _ => true
+
+/-- Cancels all tasks in the list. -/
+partial def cancel : AsyncList ε α → BaseIO Unit
+  | cons _ tl => tl.cancel
+  | nil => pure ()
+  | delayed tl => do
+    -- mind the order: if we asked the task whether it is still running
+    -- *before* cancelling it, it could be the case that it finished
+    -- just in between and has enqueued a dependent task that we would
+    -- miss (recall that cancellation is inherited by dependent tasks)
+    IO.cancel tl
+    if (← hasFinished tl) then
+      if let .ok t := tl.get then
+        t.cancel
 
 end AsyncList
 

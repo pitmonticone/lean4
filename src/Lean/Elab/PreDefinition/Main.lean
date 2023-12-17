@@ -100,13 +100,18 @@ def addPreDefinitions (preDefs : Array PreDefinition) (hints : TerminationHints)
   let preDefs ← preDefs.mapM ensureNoUnassignedMVarsAtPreDef
   let preDefs ← betaReduceLetRecApps preDefs
   let cliques := partitionPreDefs preDefs
-  let mut terminationBy ← liftMacroM <| WF.expandTerminationBy hints.terminationBy? (cliques.map fun ds => ds.map (·.declName))
-  let mut decreasingBy  ← liftMacroM <| WF.expandTerminationHint hints.decreasingBy? (cliques.map fun ds => ds.map (·.declName))
+  let mut terminationBy ← liftMacroM <| WF.expandTerminationBy? hints.terminationBy? (cliques.map fun ds => ds.map (·.declName))
+  let mut decreasingBy  ← liftMacroM <| WF.expandDecreasingBy? hints.decreasingBy? (cliques.map fun ds => ds.map (·.declName))
   let mut hasErrors := false
   for preDefs in cliques do
     trace[Elab.definition.scc] "{preDefs.map (·.declName)}"
     if preDefs.size == 1 && isNonRecursive preDefs[0]! then
-      let preDef := preDefs[0]!
+      /-
+      We must erase `recApp` annotations even when `preDef` is not recursive
+      because it may use another recursive declaration in the same mutual block.
+      See issue #2321
+      -/
+      let preDef ← eraseRecAppSyntax preDefs[0]!
       if preDef.modifiers.isNoncomputable then
         addNonRec preDef
       else

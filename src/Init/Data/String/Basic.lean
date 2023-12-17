@@ -247,7 +247,7 @@ termination_by _ => s.endPos.1 - i.1
 
 def splitOnAux (s sep : String) (b : Pos) (i : Pos) (j : Pos) (r : List String) : List String :=
   if h : s.atEnd i then
-    let r := if sep.atEnd j then ""::(s.extract b (i - j))::r else (s.extract b i)::r
+    let r := (s.extract b i)::r
     r.reverse
   else
     have := Nat.sub_lt_sub_left (Nat.gt_of_not_le (mt decide_eq_true h)) (lt_next s _)
@@ -566,7 +566,7 @@ def prevn : Substring → Nat → String.Pos → String.Pos
 @[inline] def front (s : Substring) : Char :=
   s.get 0
 
-/-- Return the offset into `s` of the first occurence of `c` in `s`,
+/-- Return the offset into `s` of the first occurrence of `c` in `s`,
 or `s.bsize` if `c` doesn't occur. -/
 @[inline] def posOf (s : Substring) (c : Char) : String.Pos :=
   match s with

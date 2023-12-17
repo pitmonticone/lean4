@@ -62,7 +62,8 @@ def handleHover (p : HoverParams)
       let stack? := snap.stx.findStack? (·.getRange?.any (·.contains hoverPos))
       let stxDoc? ← match stack? with
         | some stack => stack.findSomeM? fun (stx, _) => do
-          return (← findDocString? snap.env stx.getKind).map (·, stx.getRange?.get!)
+          let .node _ kind _ := stx | pure none
+          return (← findDocString? snap.env kind).map (·, stx.getRange?.get!)
         | none => pure none
 
       -- now try info tree
@@ -428,7 +429,7 @@ partial def handleSemanticTokens (beginPos endPos : String.Pos)
     : RequestM (RequestTask SemanticTokens) := do
   let doc ← readDoc
   let text := doc.meta.text
-  let t := doc.cmdSnaps.waitAll (·.beginPos < endPos)
+  let t := doc.cmdSnaps.waitUntil (·.endPos >= endPos)
   mapTask t fun (snaps, _) =>
     StateT.run' (s := { data := #[], lastLspPos := ⟨0, 0⟩ : SemanticTokensState }) do
       for s in snaps do

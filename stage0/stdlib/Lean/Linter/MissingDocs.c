@@ -65,7 +65,7 @@ LEAN_EXPORT lean_object* l___regBuiltin_Lean_Linter_MissingDocs_checkNotation(le
 LEAN_EXPORT lean_object* l_Lean_Linter_MissingDocs_initFn____x40_Lean_Linter_MissingDocs___hyg_1231____lambda__9___boxed(lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* l___regBuiltin_Lean_Linter_MissingDocs_checkSyntaxCat(lean_object*);
 static lean_object* l_Lean_Linter_MissingDocs_initFn____x40_Lean_Linter_MissingDocs___hyg_559____closed__1;
-size_t l___private_Lean_Data_HashSet_0__Lean_HashSetImp_mkIdx(lean_object*, uint64_t, lean_object*);
+size_t lean_hashset_mk_idx(lean_object*, uint64_t);
 static lean_object* l_Lean_Linter_initFn____x40_Lean_Linter_MissingDocs___hyg_8____closed__1;
 static lean_object* l_Lean_Linter_MissingDocs_handleIn___rarg___closed__1;
 static lean_object* l_Lean_Linter_MissingDocs_initFn____x40_Lean_Linter_MissingDocs___hyg_1231____closed__10;
@@ -2571,8 +2571,6 @@ else
 lean_object* x_44; lean_object* x_45; 
 x_44 = lean_box(0);
 x_45 = l_Lean_Linter_MissingDocs_initFn____x40_Lean_Linter_MissingDocs___hyg_1231____lambda__1(x_8, x_15, x_1, x_44, x_4, x_5, x_16);
-lean_dec(x_5);
-lean_dec(x_4);
 lean_dec(x_8);
 return x_45;
 }
@@ -2583,8 +2581,6 @@ lean_object* x_46; lean_object* x_47;
 lean_dec(x_29);
 x_46 = lean_box(0);
 x_47 = l_Lean_Linter_MissingDocs_initFn____x40_Lean_Linter_MissingDocs___hyg_1231____lambda__1(x_8, x_15, x_1, x_46, x_4, x_5, x_16);
-lean_dec(x_5);
-lean_dec(x_4);
 lean_dec(x_8);
 return x_47;
 }
@@ -3549,8 +3545,6 @@ _start:
 {
 lean_object* x_8; 
 x_8 = l_Lean_Linter_MissingDocs_initFn____x40_Lean_Linter_MissingDocs___hyg_1231____lambda__1(x_1, x_2, x_3, x_4, x_5, x_6, x_7);
-lean_dec(x_6);
-lean_dec(x_5);
 lean_dec(x_4);
 lean_dec(x_1);
 return x_8;
@@ -3972,26 +3966,13 @@ return x_9;
 }
 else
 {
-uint8_t x_10; 
-x_10 = lean_nat_dec_le(x_7, x_7);
-if (x_10 == 0)
-{
-uint8_t x_11; 
+size_t x_10; size_t x_11; uint8_t x_12; 
+x_10 = 0;
+x_11 = lean_usize_of_nat(x_7);
 lean_dec(x_7);
+x_12 = l_Array_anyMUnsafe_any___at_Lean_Linter_MissingDocs_hasInheritDoc___spec__1(x_6, x_10, x_11);
 lean_dec(x_6);
-x_11 = 0;
-return x_11;
-}
-else
-{
-size_t x_12; size_t x_13; uint8_t x_14; 
-x_12 = 0;
-x_13 = lean_usize_of_nat(x_7);
-lean_dec(x_7);
-x_14 = l_Array_anyMUnsafe_any___at_Lean_Linter_MissingDocs_hasInheritDoc___spec__1(x_6, x_12, x_13);
-lean_dec(x_6);
-return x_14;
-}
+return x_12;
 }
 }
 }
@@ -4626,7 +4607,7 @@ lean_inc(x_5);
 x_8 = lean_apply_1(x_1, x_5);
 x_9 = lean_unbox_uint64(x_8);
 lean_dec(x_8);
-x_10 = (size_t)(x_9) & (lean_unbox(x_7) - 1);
+x_10 = lean_hashset_mk_idx(x_7, x_9);
 x_11 = lean_array_uget(x_2, x_10);
 lean_ctor_set(x_3, 1, x_11);
 x_12 = lean_array_uset(x_2, x_10, x_3);
@@ -4648,7 +4629,7 @@ lean_inc(x_14);
 x_17 = lean_apply_1(x_1, x_14);
 x_18 = lean_unbox_uint64(x_17);
 lean_dec(x_17);
-x_19 = (size_t)(x_18) & (lean_unbox(x_16) - 1);
+x_19 = lean_hashset_mk_idx(x_16, x_18);
 x_20 = lean_array_uget(x_2, x_19);
 x_21 = lean_alloc_ctor(1, 2, 0);
 lean_ctor_set(x_21, 0, x_14);
@@ -4679,7 +4660,7 @@ x_4 = lean_ctor_get(x_2, 0);
 x_5 = lean_ctor_get(x_2, 1);
 x_6 = lean_array_get_size(x_1);
 x_7 = lean_uint64_of_nat(x_4);
-x_8 = (size_t)(x_7) & (lean_unbox(x_6) - 1);
+x_8 = lean_hashset_mk_idx(x_6, x_7);
 x_9 = lean_array_uget(x_1, x_8);
 lean_ctor_set(x_2, 1, x_9);
 x_10 = lean_array_uset(x_1, x_8, x_2);
@@ -4697,7 +4678,7 @@ lean_inc(x_12);
 lean_dec(x_2);
 x_14 = lean_array_get_size(x_1);
 x_15 = lean_uint64_of_nat(x_12);
-x_16 = (size_t)(x_15) & (lean_unbox(x_14) - 1);
+x_16 = lean_hashset_mk_idx(x_14, x_15);
 x_17 = lean_array_uget(x_1, x_16);
 x_18 = lean_alloc_ctor(1, 2, 0);
 lean_ctor_set(x_18, 0, x_12);
@@ -4836,7 +4817,7 @@ x_5 = lean_ctor_get(x_1, 1);
 x_6 = lean_array_get_size(x_5);
 x_7 = lean_uint64_of_nat(x_2);
 lean_inc(x_6);
-x_8 = (size_t)(x_7) & (lean_unbox(x_6) - 1);
+x_8 = lean_hashset_mk_idx(x_6, x_7);
 x_9 = lean_array_uget(x_5, x_8);
 x_10 = l_List_elem___at_Lean_Linter_MissingDocs_checkDecl___spec__4(x_2, x_9);
 if (x_10 == 0)
@@ -4888,7 +4869,7 @@ lean_dec(x_1);
 x_21 = lean_array_get_size(x_20);
 x_22 = lean_uint64_of_nat(x_2);
 lean_inc(x_21);
-x_23 = (size_t)(x_22) & (lean_unbox(x_21) - 1);
+x_23 = lean_hashset_mk_idx(x_21, x_22);
 x_24 = lean_array_uget(x_20, x_23);
 x_25 = l_List_elem___at_Lean_Linter_MissingDocs_checkDecl___spec__4(x_2, x_24);
 if (x_25 == 0)
@@ -5357,7 +5338,7 @@ lean_inc(x_3);
 lean_dec(x_1);
 x_4 = lean_array_get_size(x_3);
 x_5 = lean_uint64_of_nat(x_2);
-x_6 = (size_t)(x_5) & (lean_unbox(x_4) - 1);
+x_6 = lean_hashset_mk_idx(x_4, x_5);
 x_7 = lean_array_uget(x_3, x_6);
 lean_dec(x_3);
 x_8 = l_List_elem___at_Lean_Linter_MissingDocs_checkDecl___spec__4(x_2, x_7);
@@ -8655,10 +8636,10 @@ l_Lean_Linter_MissingDocs_missingDocs___closed__3 = _init_l_Lean_Linter_MissingD
 lean_mark_persistent(l_Lean_Linter_MissingDocs_missingDocs___closed__3);
 l_Lean_Linter_MissingDocs_missingDocs = _init_l_Lean_Linter_MissingDocs_missingDocs();
 lean_mark_persistent(l_Lean_Linter_MissingDocs_missingDocs);
-res = l_Lean_Linter_MissingDocs_initFn____x40_Lean_Linter_MissingDocs___hyg_1178_(lean_io_mk_world());
+if (builtin) {res = l_Lean_Linter_MissingDocs_initFn____x40_Lean_Linter_MissingDocs___hyg_1178_(lean_io_mk_world());
 if (lean_io_result_is_error(res)) return res;
 lean_dec_ref(res);
-l_Lean_Linter_MissingDocs_initFn____x40_Lean_Linter_MissingDocs___hyg_1231____lambda__1___closed__1 = _init_l_Lean_Linter_MissingDocs_initFn____x40_Lean_Linter_MissingDocs___hyg_1231____lambda__1___closed__1();
+}l_Lean_Linter_MissingDocs_initFn____x40_Lean_Linter_MissingDocs___hyg_1231____lambda__1___closed__1 = _init_l_Lean_Linter_MissingDocs_initFn____x40_Lean_Linter_MissingDocs___hyg_1231____lambda__1___closed__1();
 lean_mark_persistent(l_Lean_Linter_MissingDocs_initFn____x40_Lean_Linter_MissingDocs___hyg_1231____lambda__1___closed__1);
 l_Lean_Linter_MissingDocs_initFn____x40_Lean_Linter_MissingDocs___hyg_1231____lambda__1___closed__2 = _init_l_Lean_Linter_MissingDocs_initFn____x40_Lean_Linter_MissingDocs___hyg_1231____lambda__1___closed__2();
 lean_mark_persistent(l_Lean_Linter_MissingDocs_initFn____x40_Lean_Linter_MissingDocs___hyg_1231____lambda__1___closed__2);
@@ -8748,10 +8729,10 @@ l_Lean_Linter_MissingDocs_initFn____x40_Lean_Linter_MissingDocs___hyg_1231____cl
 lean_mark_persistent(l_Lean_Linter_MissingDocs_initFn____x40_Lean_Linter_MissingDocs___hyg_1231____closed__23);
 l_Lean_Linter_MissingDocs_initFn____x40_Lean_Linter_MissingDocs___hyg_1231____closed__24 = _init_l_Lean_Linter_MissingDocs_initFn____x40_Lean_Linter_MissingDocs___hyg_1231____closed__24();
 lean_mark_persistent(l_Lean_Linter_MissingDocs_initFn____x40_Lean_Linter_MissingDocs___hyg_1231____closed__24);
-res = l_Lean_Linter_MissingDocs_initFn____x40_Lean_Linter_MissingDocs___hyg_1231_(lean_io_mk_world());
+if (builtin) {res = l_Lean_Linter_MissingDocs_initFn____x40_Lean_Linter_MissingDocs___hyg_1231_(lean_io_mk_world());
 if (lean_io_result_is_error(res)) return res;
 lean_dec_ref(res);
-l_Lean_Linter_logLint___at_Lean_Linter_MissingDocs_lint___spec__1___closed__1 = _init_l_Lean_Linter_logLint___at_Lean_Linter_MissingDocs_lint___spec__1___closed__1();
+}l_Lean_Linter_logLint___at_Lean_Linter_MissingDocs_lint___spec__1___closed__1 = _init_l_Lean_Linter_logLint___at_Lean_Linter_MissingDocs_lint___spec__1___closed__1();
 lean_mark_persistent(l_Lean_Linter_logLint___at_Lean_Linter_MissingDocs_lint___spec__1___closed__1);
 l_Lean_Linter_logLint___at_Lean_Linter_MissingDocs_lint___spec__1___closed__2 = _init_l_Lean_Linter_logLint___at_Lean_Linter_MissingDocs_lint___spec__1___closed__2();
 lean_mark_persistent(l_Lean_Linter_logLint___at_Lean_Linter_MissingDocs_lint___spec__1___closed__2);
@@ -8855,10 +8836,10 @@ l___regBuiltin_Lean_Linter_MissingDocs_checkDecl___closed__3 = _init_l___regBuil
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkDecl___closed__3);
 l___regBuiltin_Lean_Linter_MissingDocs_checkDecl___closed__4 = _init_l___regBuiltin_Lean_Linter_MissingDocs_checkDecl___closed__4();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkDecl___closed__4);
-res = l___regBuiltin_Lean_Linter_MissingDocs_checkDecl(lean_io_mk_world());
+if (builtin) {res = l___regBuiltin_Lean_Linter_MissingDocs_checkDecl(lean_io_mk_world());
 if (lean_io_result_is_error(res)) return res;
 lean_dec_ref(res);
-l_Lean_Linter_MissingDocs_checkInit___closed__1 = _init_l_Lean_Linter_MissingDocs_checkInit___closed__1();
+}l_Lean_Linter_MissingDocs_checkInit___closed__1 = _init_l_Lean_Linter_MissingDocs_checkInit___closed__1();
 lean_mark_persistent(l_Lean_Linter_MissingDocs_checkInit___closed__1);
 l___regBuiltin_Lean_Linter_MissingDocs_checkInit___closed__1 = _init_l___regBuiltin_Lean_Linter_MissingDocs_checkInit___closed__1();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkInit___closed__1);
@@ -8868,10 +8849,10 @@ l___regBuiltin_Lean_Linter_MissingDocs_checkInit___closed__3 = _init_l___regBuil
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkInit___closed__3);
 l___regBuiltin_Lean_Linter_MissingDocs_checkInit___closed__4 = _init_l___regBuiltin_Lean_Linter_MissingDocs_checkInit___closed__4();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkInit___closed__4);
-res = l___regBuiltin_Lean_Linter_MissingDocs_checkInit(lean_io_mk_world());
+if (builtin) {res = l___regBuiltin_Lean_Linter_MissingDocs_checkInit(lean_io_mk_world());
 if (lean_io_result_is_error(res)) return res;
 lean_dec_ref(res);
-l_Lean_Linter_MissingDocs_checkNotation___closed__1 = _init_l_Lean_Linter_MissingDocs_checkNotation___closed__1();
+}l_Lean_Linter_MissingDocs_checkNotation___closed__1 = _init_l_Lean_Linter_MissingDocs_checkNotation___closed__1();
 lean_mark_persistent(l_Lean_Linter_MissingDocs_checkNotation___closed__1);
 l_Lean_Linter_MissingDocs_checkNotation___closed__2 = _init_l_Lean_Linter_MissingDocs_checkNotation___closed__2();
 lean_mark_persistent(l_Lean_Linter_MissingDocs_checkNotation___closed__2);
@@ -8885,10 +8866,10 @@ l___regBuiltin_Lean_Linter_MissingDocs_checkNotation___closed__2 = _init_l___reg
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkNotation___closed__2);
 l___regBuiltin_Lean_Linter_MissingDocs_checkNotation___closed__3 = _init_l___regBuiltin_Lean_Linter_MissingDocs_checkNotation___closed__3();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkNotation___closed__3);
-res = l___regBuiltin_Lean_Linter_MissingDocs_checkNotation(lean_io_mk_world());
+if (builtin) {res = l___regBuiltin_Lean_Linter_MissingDocs_checkNotation(lean_io_mk_world());
 if (lean_io_result_is_error(res)) return res;
 lean_dec_ref(res);
-l___regBuiltin_Lean_Linter_MissingDocs_checkMixfix___closed__1 = _init_l___regBuiltin_Lean_Linter_MissingDocs_checkMixfix___closed__1();
+}l___regBuiltin_Lean_Linter_MissingDocs_checkMixfix___closed__1 = _init_l___regBuiltin_Lean_Linter_MissingDocs_checkMixfix___closed__1();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkMixfix___closed__1);
 l___regBuiltin_Lean_Linter_MissingDocs_checkMixfix___closed__2 = _init_l___regBuiltin_Lean_Linter_MissingDocs_checkMixfix___closed__2();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkMixfix___closed__2);
@@ -8896,10 +8877,10 @@ l___regBuiltin_Lean_Linter_MissingDocs_checkMixfix___closed__3 = _init_l___regBu
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkMixfix___closed__3);
 l___regBuiltin_Lean_Linter_MissingDocs_checkMixfix___closed__4 = _init_l___regBuiltin_Lean_Linter_MissingDocs_checkMixfix___closed__4();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkMixfix___closed__4);
-res = l___regBuiltin_Lean_Linter_MissingDocs_checkMixfix(lean_io_mk_world());
+if (builtin) {res = l___regBuiltin_Lean_Linter_MissingDocs_checkMixfix(lean_io_mk_world());
 if (lean_io_result_is_error(res)) return res;
 lean_dec_ref(res);
-l_Lean_Linter_MissingDocs_checkSyntax___closed__1 = _init_l_Lean_Linter_MissingDocs_checkSyntax___closed__1();
+}l_Lean_Linter_MissingDocs_checkSyntax___closed__1 = _init_l_Lean_Linter_MissingDocs_checkSyntax___closed__1();
 lean_mark_persistent(l_Lean_Linter_MissingDocs_checkSyntax___closed__1);
 l___regBuiltin_Lean_Linter_MissingDocs_checkSyntax___closed__1 = _init_l___regBuiltin_Lean_Linter_MissingDocs_checkSyntax___closed__1();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkSyntax___closed__1);
@@ -8907,10 +8888,10 @@ l___regBuiltin_Lean_Linter_MissingDocs_checkSyntax___closed__2 = _init_l___regBu
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkSyntax___closed__2);
 l___regBuiltin_Lean_Linter_MissingDocs_checkSyntax___closed__3 = _init_l___regBuiltin_Lean_Linter_MissingDocs_checkSyntax___closed__3();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkSyntax___closed__3);
-res = l___regBuiltin_Lean_Linter_MissingDocs_checkSyntax(lean_io_mk_world());
+if (builtin) {res = l___regBuiltin_Lean_Linter_MissingDocs_checkSyntax(lean_io_mk_world());
 if (lean_io_result_is_error(res)) return res;
 lean_dec_ref(res);
-l___regBuiltin_Lean_Linter_MissingDocs_checkSyntaxAbbrev___closed__1 = _init_l___regBuiltin_Lean_Linter_MissingDocs_checkSyntaxAbbrev___closed__1();
+}l___regBuiltin_Lean_Linter_MissingDocs_checkSyntaxAbbrev___closed__1 = _init_l___regBuiltin_Lean_Linter_MissingDocs_checkSyntaxAbbrev___closed__1();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkSyntaxAbbrev___closed__1);
 l___regBuiltin_Lean_Linter_MissingDocs_checkSyntaxAbbrev___closed__2 = _init_l___regBuiltin_Lean_Linter_MissingDocs_checkSyntaxAbbrev___closed__2();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkSyntaxAbbrev___closed__2);
@@ -8918,10 +8899,10 @@ l___regBuiltin_Lean_Linter_MissingDocs_checkSyntaxAbbrev___closed__3 = _init_l__
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkSyntaxAbbrev___closed__3);
 l___regBuiltin_Lean_Linter_MissingDocs_checkSyntaxAbbrev___closed__4 = _init_l___regBuiltin_Lean_Linter_MissingDocs_checkSyntaxAbbrev___closed__4();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkSyntaxAbbrev___closed__4);
-res = l___regBuiltin_Lean_Linter_MissingDocs_checkSyntaxAbbrev(lean_io_mk_world());
+if (builtin) {res = l___regBuiltin_Lean_Linter_MissingDocs_checkSyntaxAbbrev(lean_io_mk_world());
 if (lean_io_result_is_error(res)) return res;
 lean_dec_ref(res);
-l_Lean_Linter_MissingDocs_checkSyntaxCat___closed__1 = _init_l_Lean_Linter_MissingDocs_checkSyntaxCat___closed__1();
+}l_Lean_Linter_MissingDocs_checkSyntaxCat___closed__1 = _init_l_Lean_Linter_MissingDocs_checkSyntaxCat___closed__1();
 lean_mark_persistent(l_Lean_Linter_MissingDocs_checkSyntaxCat___closed__1);
 l___regBuiltin_Lean_Linter_MissingDocs_checkSyntaxCat___closed__1 = _init_l___regBuiltin_Lean_Linter_MissingDocs_checkSyntaxCat___closed__1();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkSyntaxCat___closed__1);
@@ -8931,10 +8912,10 @@ l___regBuiltin_Lean_Linter_MissingDocs_checkSyntaxCat___closed__3 = _init_l___re
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkSyntaxCat___closed__3);
 l___regBuiltin_Lean_Linter_MissingDocs_checkSyntaxCat___closed__4 = _init_l___regBuiltin_Lean_Linter_MissingDocs_checkSyntaxCat___closed__4();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkSyntaxCat___closed__4);
-res = l___regBuiltin_Lean_Linter_MissingDocs_checkSyntaxCat(lean_io_mk_world());
+if (builtin) {res = l___regBuiltin_Lean_Linter_MissingDocs_checkSyntaxCat(lean_io_mk_world());
 if (lean_io_result_is_error(res)) return res;
 lean_dec_ref(res);
-l_Lean_Linter_MissingDocs_checkMacro___closed__1 = _init_l_Lean_Linter_MissingDocs_checkMacro___closed__1();
+}l_Lean_Linter_MissingDocs_checkMacro___closed__1 = _init_l_Lean_Linter_MissingDocs_checkMacro___closed__1();
 lean_mark_persistent(l_Lean_Linter_MissingDocs_checkMacro___closed__1);
 l___regBuiltin_Lean_Linter_MissingDocs_checkMacro___closed__1 = _init_l___regBuiltin_Lean_Linter_MissingDocs_checkMacro___closed__1();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkMacro___closed__1);
@@ -8942,10 +8923,10 @@ l___regBuiltin_Lean_Linter_MissingDocs_checkMacro___closed__2 = _init_l___regBui
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkMacro___closed__2);
 l___regBuiltin_Lean_Linter_MissingDocs_checkMacro___closed__3 = _init_l___regBuiltin_Lean_Linter_MissingDocs_checkMacro___closed__3();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkMacro___closed__3);
-res = l___regBuiltin_Lean_Linter_MissingDocs_checkMacro(lean_io_mk_world());
+if (builtin) {res = l___regBuiltin_Lean_Linter_MissingDocs_checkMacro(lean_io_mk_world());
 if (lean_io_result_is_error(res)) return res;
 lean_dec_ref(res);
-l_Lean_Linter_MissingDocs_checkElab___closed__1 = _init_l_Lean_Linter_MissingDocs_checkElab___closed__1();
+}l_Lean_Linter_MissingDocs_checkElab___closed__1 = _init_l_Lean_Linter_MissingDocs_checkElab___closed__1();
 lean_mark_persistent(l_Lean_Linter_MissingDocs_checkElab___closed__1);
 l___regBuiltin_Lean_Linter_MissingDocs_checkElab___closed__1 = _init_l___regBuiltin_Lean_Linter_MissingDocs_checkElab___closed__1();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkElab___closed__1);
@@ -8953,10 +8934,10 @@ l___regBuiltin_Lean_Linter_MissingDocs_checkElab___closed__2 = _init_l___regBuil
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkElab___closed__2);
 l___regBuiltin_Lean_Linter_MissingDocs_checkElab___closed__3 = _init_l___regBuiltin_Lean_Linter_MissingDocs_checkElab___closed__3();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkElab___closed__3);
-res = l___regBuiltin_Lean_Linter_MissingDocs_checkElab(lean_io_mk_world());
+if (builtin) {res = l___regBuiltin_Lean_Linter_MissingDocs_checkElab(lean_io_mk_world());
 if (lean_io_result_is_error(res)) return res;
 lean_dec_ref(res);
-l_Lean_Linter_MissingDocs_checkClassAbbrev___closed__1 = _init_l_Lean_Linter_MissingDocs_checkClassAbbrev___closed__1();
+}l_Lean_Linter_MissingDocs_checkClassAbbrev___closed__1 = _init_l_Lean_Linter_MissingDocs_checkClassAbbrev___closed__1();
 lean_mark_persistent(l_Lean_Linter_MissingDocs_checkClassAbbrev___closed__1);
 l___regBuiltin_Lean_Linter_MissingDocs_checkClassAbbrev___closed__1 = _init_l___regBuiltin_Lean_Linter_MissingDocs_checkClassAbbrev___closed__1();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkClassAbbrev___closed__1);
@@ -8966,10 +8947,10 @@ l___regBuiltin_Lean_Linter_MissingDocs_checkClassAbbrev___closed__3 = _init_l___
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkClassAbbrev___closed__3);
 l___regBuiltin_Lean_Linter_MissingDocs_checkClassAbbrev___closed__4 = _init_l___regBuiltin_Lean_Linter_MissingDocs_checkClassAbbrev___closed__4();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkClassAbbrev___closed__4);
-res = l___regBuiltin_Lean_Linter_MissingDocs_checkClassAbbrev(lean_io_mk_world());
+if (builtin) {res = l___regBuiltin_Lean_Linter_MissingDocs_checkClassAbbrev(lean_io_mk_world());
 if (lean_io_result_is_error(res)) return res;
 lean_dec_ref(res);
-l_Lean_Linter_MissingDocs_checkSimpLike___closed__1 = _init_l_Lean_Linter_MissingDocs_checkSimpLike___closed__1();
+}l_Lean_Linter_MissingDocs_checkSimpLike___closed__1 = _init_l_Lean_Linter_MissingDocs_checkSimpLike___closed__1();
 lean_mark_persistent(l_Lean_Linter_MissingDocs_checkSimpLike___closed__1);
 l___regBuiltin_Lean_Linter_MissingDocs_checkSimpLike___closed__1 = _init_l___regBuiltin_Lean_Linter_MissingDocs_checkSimpLike___closed__1();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkSimpLike___closed__1);
@@ -8981,10 +8962,10 @@ l___regBuiltin_Lean_Linter_MissingDocs_checkSimpLike___closed__4 = _init_l___reg
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkSimpLike___closed__4);
 l___regBuiltin_Lean_Linter_MissingDocs_checkSimpLike___closed__5 = _init_l___regBuiltin_Lean_Linter_MissingDocs_checkSimpLike___closed__5();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkSimpLike___closed__5);
-res = l___regBuiltin_Lean_Linter_MissingDocs_checkSimpLike(lean_io_mk_world());
+if (builtin) {res = l___regBuiltin_Lean_Linter_MissingDocs_checkSimpLike(lean_io_mk_world());
 if (lean_io_result_is_error(res)) return res;
 lean_dec_ref(res);
-l_Lean_Linter_MissingDocs_checkRegisterBuiltinOption___closed__1 = _init_l_Lean_Linter_MissingDocs_checkRegisterBuiltinOption___closed__1();
+}l_Lean_Linter_MissingDocs_checkRegisterBuiltinOption___closed__1 = _init_l_Lean_Linter_MissingDocs_checkRegisterBuiltinOption___closed__1();
 lean_mark_persistent(l_Lean_Linter_MissingDocs_checkRegisterBuiltinOption___closed__1);
 l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterBuiltinOption___closed__1 = _init_l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterBuiltinOption___closed__1();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterBuiltinOption___closed__1);
@@ -8996,10 +8977,10 @@ l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterBuiltinOption___closed__4 = 
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterBuiltinOption___closed__4);
 l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterBuiltinOption___closed__5 = _init_l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterBuiltinOption___closed__5();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterBuiltinOption___closed__5);
-res = l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterBuiltinOption(lean_io_mk_world());
+if (builtin) {res = l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterBuiltinOption(lean_io_mk_world());
 if (lean_io_result_is_error(res)) return res;
 lean_dec_ref(res);
-l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterOption___closed__1 = _init_l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterOption___closed__1();
+}l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterOption___closed__1 = _init_l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterOption___closed__1();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterOption___closed__1);
 l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterOption___closed__2 = _init_l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterOption___closed__2();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterOption___closed__2);
@@ -9007,10 +8988,10 @@ l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterOption___closed__3 = _init_l
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterOption___closed__3);
 l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterOption___closed__4 = _init_l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterOption___closed__4();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterOption___closed__4);
-res = l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterOption(lean_io_mk_world());
+if (builtin) {res = l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterOption(lean_io_mk_world());
 if (lean_io_result_is_error(res)) return res;
 lean_dec_ref(res);
-l_Lean_Linter_MissingDocs_checkRegisterSimpAttr___closed__1 = _init_l_Lean_Linter_MissingDocs_checkRegisterSimpAttr___closed__1();
+}l_Lean_Linter_MissingDocs_checkRegisterSimpAttr___closed__1 = _init_l_Lean_Linter_MissingDocs_checkRegisterSimpAttr___closed__1();
 lean_mark_persistent(l_Lean_Linter_MissingDocs_checkRegisterSimpAttr___closed__1);
 l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterSimpAttr___closed__1 = _init_l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterSimpAttr___closed__1();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterSimpAttr___closed__1);
@@ -9020,10 +9001,10 @@ l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterSimpAttr___closed__3 = _init
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterSimpAttr___closed__3);
 l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterSimpAttr___closed__4 = _init_l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterSimpAttr___closed__4();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterSimpAttr___closed__4);
-res = l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterSimpAttr(lean_io_mk_world());
+if (builtin) {res = l___regBuiltin_Lean_Linter_MissingDocs_checkRegisterSimpAttr(lean_io_mk_world());
 if (lean_io_result_is_error(res)) return res;
 lean_dec_ref(res);
-l_Lean_Elab_elabSetOption_setOption___at_Lean_Linter_MissingDocs_handleIn___spec__4___closed__1 = _init_l_Lean_Elab_elabSetOption_setOption___at_Lean_Linter_MissingDocs_handleIn___spec__4___closed__1();
+}l_Lean_Elab_elabSetOption_setOption___at_Lean_Linter_MissingDocs_handleIn___spec__4___closed__1 = _init_l_Lean_Elab_elabSetOption_setOption___at_Lean_Linter_MissingDocs_handleIn___spec__4___closed__1();
 lean_mark_persistent(l_Lean_Elab_elabSetOption_setOption___at_Lean_Linter_MissingDocs_handleIn___spec__4___closed__1);
 l_Lean_Elab_elabSetOption_setOption___at_Lean_Linter_MissingDocs_handleIn___spec__4___closed__2 = _init_l_Lean_Elab_elabSetOption_setOption___at_Lean_Linter_MissingDocs_handleIn___spec__4___closed__2();
 lean_mark_persistent(l_Lean_Elab_elabSetOption_setOption___at_Lean_Linter_MissingDocs_handleIn___spec__4___closed__2);
@@ -9049,19 +9030,19 @@ l___regBuiltin_Lean_Linter_MissingDocs_handleIn___closed__2 = _init_l___regBuilt
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_handleIn___closed__2);
 l___regBuiltin_Lean_Linter_MissingDocs_handleIn___closed__3 = _init_l___regBuiltin_Lean_Linter_MissingDocs_handleIn___closed__3();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_handleIn___closed__3);
-res = l___regBuiltin_Lean_Linter_MissingDocs_handleIn(lean_io_mk_world());
+if (builtin) {res = l___regBuiltin_Lean_Linter_MissingDocs_handleIn(lean_io_mk_world());
 if (lean_io_result_is_error(res)) return res;
 lean_dec_ref(res);
-l___regBuiltin_Lean_Linter_MissingDocs_handleMutual___closed__1 = _init_l___regBuiltin_Lean_Linter_MissingDocs_handleMutual___closed__1();
+}l___regBuiltin_Lean_Linter_MissingDocs_handleMutual___closed__1 = _init_l___regBuiltin_Lean_Linter_MissingDocs_handleMutual___closed__1();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_handleMutual___closed__1);
 l___regBuiltin_Lean_Linter_MissingDocs_handleMutual___closed__2 = _init_l___regBuiltin_Lean_Linter_MissingDocs_handleMutual___closed__2();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_handleMutual___closed__2);
 l___regBuiltin_Lean_Linter_MissingDocs_handleMutual___closed__3 = _init_l___regBuiltin_Lean_Linter_MissingDocs_handleMutual___closed__3();
 lean_mark_persistent(l___regBuiltin_Lean_Linter_MissingDocs_handleMutual___closed__3);
-res = l___regBuiltin_Lean_Linter_MissingDocs_handleMutual(lean_io_mk_world());
+if (builtin) {res = l___regBuiltin_Lean_Linter_MissingDocs_handleMutual(lean_io_mk_world());
 if (lean_io_result_is_error(res)) return res;
 lean_dec_ref(res);
-return lean_io_result_mk_ok(lean_box(0));
+}return lean_io_result_mk_ok(lean_box(0));
 }
 #ifdef __cplusplus
 }

@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2017 Microsoft Corporation. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Luke Nelson, Jared Roesch, Leonardo de Moura, Sebastian Ullrich
+Authors: Luke Nelson, Jared Roesch, Leonardo de Moura, Sebastian Ullrich, Mac Malone
 -/
 prelude
 import Init.Control.EState
@@ -16,7 +16,7 @@ import Init.Data.Ord
 
 open System
 
-/-- Like https://hackage.haskell.org/package/ghc-Prim-0.5.2.0/docs/GHC-Prim.html#t:RealWorld.
+/-- Like <https://hackage.haskell.org/package/ghc-Prim-0.5.2.0/docs/GHC-Prim.html#t:RealWorld>.
     Makes sure we never reorder `IO` operations.
 
     TODO: mark opaque -/
@@ -219,8 +219,67 @@ local macro "nonempty_list" : tactic =>
 /-- Helper method for implementing "deterministic" timeouts. It is the number of "small" memory allocations performed by the current execution thread. -/
 @[extern "lean_io_get_num_heartbeats"] opaque getNumHeartbeats : BaseIO Nat
 
+/--
+The mode of a file handle (i.e., a set of `open` flags and an `fdopen` mode).
+
+All modes do not translate line endings (i.e., `O_BINARY` on Windows) and
+are not inherited across process creation (i.e., `O_NOINHERIT` on Windows,
+`O_CLOEXEC` elsewhere).
+
+**References:**
+* Windows:
+  [`_open`](https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/open-wopen?view=msvc-170),
+  [`_fdopen`](https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/fdopen-wfdopen?view=msvc-170)
+* Linux:
+  [`open`](https://linux.die.net/man/2/open),
+  [`fdopen`](https://linux.die.net/man/3/fdopen)
+-/
 inductive FS.Mode where
-  | read | write | readWrite | append
+  /--
+  File opened for reading.
+  On open, the stream is positioned at the beginning of the file.
+  Errors if the file does not exist.
+
+  * `open` flags: `O_RDONLY`
+  * `fdopen` mode: `r`
+  -/
+  | read
+  /--
+  File opened for writing.
+  On open, truncate an existing file to zero length or create a new file.
+  The stream is positioned at the beginning of the file.
+
+  * `open` flags: `O_WRONLY | O_CREAT | O_TRUNC`
+  * `fdopen` mode: `w`
+  -/
+  | write
+  /--
+  New file opened for writing.
+  On open, create a new file with the stream positioned at the start.
+  Errors if the file already exists.
+
+  * `open` flags: `O_WRONLY | O_CREAT | O_TRUNC | O_EXCL`
+  * `fdopen` mode: `w`
+  -/
+  | writeNew
+  /--
+  File opened for reading and writing.
+  On open, the stream is positioned at the beginning of the file.
+  Errors if the file does not exist.
+
+  * `open` flags: `O_RDWR`
+  * `fdopen` mode: `r+`
+  -/
+  | readWrite
+  /--
+  File opened for writing.
+  On open, create a new file if it does not exist.
+  The stream is positioned at the end of the file.
+
+  * `open` flags: `O_WRONLY | O_CREAT | O_APPEND`
+  * `fdopen` mode: `a`
+  -/
+  | append
 
 opaque FS.Handle : Type := Unit
 
@@ -269,7 +328,41 @@ namespace FS
 namespace Handle
 
 @[extern "lean_io_prim_handle_mk"] opaque mk (fn : @& FilePath) (mode : FS.Mode) : IO Handle
+
+/--
+Acquires an exclusive or shared lock on the handle.
+Will block to wait for the lock if necessary.
+
+**NOTE:** Acquiring a exclusive lock while already possessing a shared lock
+will NOT reliably succeed (i.e., it works on Unix but not on Windows).
+-/
+@[extern "lean_io_prim_handle_lock"] opaque lock (h : @& Handle) (exclusive := true) : IO Unit
+/--
+Tries to acquire an exclusive or shared lock on the handle.
+Will NOT block for the lock, but instead return `false`.
+
+**NOTE:** Acquiring a exclusive lock while already possessing a shared lock
+will NOT reliably succeed (i.e., it works on Unix but not on Windows).
+-/
+@[extern "lean_io_prim_handle_try_lock"] opaque tryLock (h : @& Handle) (exclusive := true) : IO Bool
+/--
+Releases any previously acquired lock on the handle.
+Will succeed even if no lock has been acquired.
+-/
+@[extern "lean_io_prim_handle_unlock"] opaque unlock (h : @& Handle) : IO Unit
+
 @[extern "lean_io_prim_handle_flush"] opaque flush (h : @& Handle) : IO Unit
+/-- Rewinds the read/write cursor to the beginning of the handle. -/
+@[extern "lean_io_prim_handle_rewind"] opaque rewind (h : @& Handle) : IO Unit
+/--
+Truncates the handle to the read/write cursor.
+
+Does not automatically flush. Usually this is fine because the read/write
+cursor includes buffered writes. However, the combination of buffered writes,
+then `rewind`, then `truncate`, then close may lead to a file with content.
+If unsure, flush before truncating.
+-/
+@[extern "lean_io_prim_handle_truncate"] opaque truncate (h : @& Handle) : IO Unit
 /--
 Read up to the given number of bytes from the handle.
 If the returned array is empty, an end-of-file marker has been reached.
@@ -293,6 +386,14 @@ end Handle
 /-- Remove given directory. Fails if not empty; see also `IO.FS.removeDirAll`. -/
 @[extern "lean_io_remove_dir"] opaque removeDir : @& FilePath → IO Unit
 @[extern "lean_io_create_dir"] opaque createDir : @& FilePath → IO Unit
+
+/--
+Moves a file or directory `old` to the new location `new`.
+
+This function coincides with the [POSIX `rename` function](https://pubs.opengroup.org/onlinepubs/9699919799/functions/rename.html),
+see there for more information.
+-/
+@[extern "lean_io_rename"] opaque rename (old new : @& FilePath) : IO Unit
 
 end FS
 
@@ -509,6 +610,10 @@ partial def FS.removeDirAll (p : FilePath) : IO Unit := do
   removeDir p
 
 namespace Process
+
+/-- Returns the process ID of the current process. -/
+@[extern "lean_io_process_get_pid"] opaque getPID : BaseIO UInt32
+
 inductive Stdio where
   | piped
   | inherit
@@ -567,9 +672,12 @@ structure Output where
   stdout   : String
   stderr   : String
 
-/-- Run process to completion and capture output. -/
+/--
+Run process to completion and capture output.
+The process does not inherit the standard input of the caller.
+-/
 def output (args : SpawnArgs) : IO Output := do
-  let child ← spawn { args with stdout := Stdio.piped, stderr := Stdio.piped }
+  let child ← spawn { args with stdout := .piped, stderr := .piped, stdin := .null }
   let stdout ← IO.asTask child.stdout.readToEnd Task.Priority.dedicated
   let stderr ← child.stderr.readToEnd
   let exitCode ← child.wait
